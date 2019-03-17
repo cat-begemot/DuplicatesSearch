@@ -20,8 +20,60 @@ namespace DuplicatesSearch
 			InitProgram(args); // Initializes workspace for program - check all pathes and demands via arguments
 			if (stopProgram) return;
 
+			SearchInsideOriginal();
+			SearchInsideChecking();
 
 			Console.ReadLine();
+		}
+
+
+		private static void SearchInsideOriginal()
+		{
+			Console.WriteLine("2. Search duplicates in [Origin] directory:");
+			StringBuilder result = SearchInsideDir(originFullPath);
+
+			Console.WriteLine(result.ToString());
+		}
+
+		private static void SearchInsideChecking()
+		{
+			Console.WriteLine("3. Search duplicates in [Checking] directory:");
+			StringBuilder result = SearchInsideDir(checkingFullPath);
+
+			Console.WriteLine(result.ToString());
+		}
+
+		/// <summary>
+		/// Search duplicated files inside directory
+		/// </summary>
+		private static StringBuilder SearchInsideDir(String path)
+		{
+			StringBuilder duplicatesFiles = new StringBuilder();
+			String[] files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
+			Int32 countPairs = 0;
+			
+			if(files.Length>=2)
+			{
+				for (Int32 ind1 = 0; ind1 < files.Length - 1; ind1++)
+				{
+					for (Int32 ind2 = ind1+1; ind2 < files.Length; ind2++)
+					{
+						if (String.Equals(Path.GetFileName(files[ind1]), Path.GetFileName(files[ind2])))
+						{
+							countPairs++;
+							duplicatesFiles.AppendLine($"-> {files[ind1]}");
+							duplicatesFiles.AppendLine($"   {files[ind2]}");
+						}
+					}
+				}
+			}
+
+			if (countPairs == 0)
+				duplicatesFiles.AppendLine("INF: Duplicates weren't found.");
+			else
+				duplicatesFiles.AppendLine($"INF: Total pairs: {countPairs}");
+
+			return duplicatesFiles;;
 		}
 
 		/// <summary>
@@ -30,15 +82,10 @@ namespace DuplicatesSearch
 		/// <param name="args"></param>
 		private static void InitProgram(string[] args)
 		{
-			if (args.Length == 0) // args arrange is empty
-			{
-				Console.WriteLine("Show help information");
-				stopProgram = true;
-			}
-			else // Arguments were passed
+			if( args.Length!=0) // User inputed arguments
 			{
 				List<String> initInfo = new List<String>();
-				Console.WriteLine("1. Initialization:");
+				initInfo.Add("1. Initialization:");
 				for (Int32 ind = 0; ind < args.Length; ind++)
 				{
 					switch (args[ind])
@@ -82,6 +129,8 @@ namespace DuplicatesSearch
 										}
 										else
 											initInfo.Add($"INF: [Checking] -> {checkingFullPath}");
+
+										ind++;
 									}
 								}
 								else
@@ -107,6 +156,10 @@ namespace DuplicatesSearch
 					}
 				}
 
+				// Check if neccessary variables were assigned
+				if(originFullPath==null || checkingFullPath==null)
+					stopProgram=true;
+
 				// Processing initInfo variable (checking whether initialization has gone successfully
 				StringBuilder resultInitInfo = new StringBuilder(512);
 				if (stopProgram) // Stop program if there are errors
@@ -114,18 +167,23 @@ namespace DuplicatesSearch
 					foreach (var str in initInfo)
 						if (str.StartsWith("ERR:"))
 							resultInitInfo.AppendLine(str);
-					resultInitInfo.AppendLine().AppendLine("MSG: The program cannot be run due to lack of complete information from the user");
+					resultInitInfo.AppendLine("INF: The program cannot be run due to lack of complete information from the user");
 				}
 				else
 				{
 					foreach (var str in initInfo)
 						if (!str.StartsWith("ERR:"))
 							resultInitInfo.AppendLine(str);
-					resultInitInfo.AppendLine().AppendLine("MSG: The program was initialized succesfully");
+					resultInitInfo.AppendLine("INF: The program was initialized succesfully");
 				}
 
 				// Display initializator result
 				Console.WriteLine(resultInitInfo.ToString());
+			}
+			else // User didn't input any argument, so show help information
+			{
+				Console.WriteLine("Show help information");
+				stopProgram = true;
 			}
 		}
 	}
