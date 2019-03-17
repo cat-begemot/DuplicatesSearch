@@ -22,10 +22,61 @@ namespace DuplicatesSearch
 
 			SearchInsideOriginal();
 			SearchInsideChecking();
+			SearchBetweenDirs();
 
 			Console.ReadLine();
 		}
 
+		private static void SearchBetweenDirs()
+		{
+			Console.WriteLine("4. Search duplicates between [Origin] and [Checking]:");
+			StringBuilder duplicatesFiles = new StringBuilder(1024);
+			String[] originFiles = Directory.GetFiles(originFullPath, "*.*", SearchOption.AllDirectories);
+			String[] checkingFiles = Directory.GetFiles(checkingFullPath, "*.*", SearchOption.AllDirectories);
+			Int32 countPairs = 0;
+			DirectoryInfo tempDir = null;
+
+			if (originFiles.Length == 0)
+				duplicatesFiles.AppendLine("[Origin] directory is empty.");
+			if (checkingFiles.Length == 0)
+				duplicatesFiles.AppendLine("[Checking] directory is empty");
+
+			if(originFiles.Length!=0 && checkingFiles.Length!=0)
+			{
+				for(Int32 ind1=0; ind1<originFiles.Length; ind1++)
+				{
+					for(Int32 ind2=0; ind2<checkingFiles.Length; ind2++)
+					{
+						if (String.Equals(Path.GetFileName(originFiles[ind1]), Path.GetFileName(checkingFiles[ind2])))
+						{
+							countPairs++;
+							duplicatesFiles.AppendLine($"-> {originFiles[ind1]}");
+							duplicatesFiles.AppendLine($"   {checkingFiles[ind2]}");
+
+							if(moveDuplicates)
+							{
+								if(tempDir==null)
+									tempDir = Directory.CreateDirectory(Path.Combine(checkingFullPath,
+										new StringBuilder(DateTime.Now.ToString().Replace(":", ".").Replace(" ", "_")).ToString()));
+
+								// Copy saving catalog structure (because it could be duplicated files)
+								File.Copy(checkingFiles[ind2], Path.Combine(tempDir.FullName, Path.GetFileName(checkingFiles[ind2])));
+								File.Delete(checkingFiles[ind2]);
+							}
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (countPairs == 0)
+				Console.WriteLine("INF: Duplicates weren't found.");
+			else
+				Console.WriteLine($"INF: Total pairs: {countPairs}");
+
+			Console.WriteLine(duplicatesFiles.ToString());
+		}
 
 		private static void SearchInsideOriginal()
 		{
@@ -48,7 +99,7 @@ namespace DuplicatesSearch
 		/// </summary>
 		private static StringBuilder SearchInsideDir(String path)
 		{
-			StringBuilder duplicatesFiles = new StringBuilder();
+			StringBuilder duplicatesFiles = new StringBuilder(1024);
 			String[] files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
 			Int32 countPairs = 0;
 			
@@ -63,6 +114,7 @@ namespace DuplicatesSearch
 							countPairs++;
 							duplicatesFiles.AppendLine($"-> {files[ind1]}");
 							duplicatesFiles.AppendLine($"   {files[ind2]}");
+							break;
 						}
 					}
 				}
@@ -73,7 +125,7 @@ namespace DuplicatesSearch
 			else
 				duplicatesFiles.AppendLine($"INF: Total pairs: {countPairs}");
 
-			return duplicatesFiles;;
+			return duplicatesFiles;
 		}
 
 		/// <summary>
