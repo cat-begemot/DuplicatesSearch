@@ -9,8 +9,8 @@ namespace DuplicatesSearch
 {
 	internal class Program
 	{
-		private static String originFullPath;
-		private static String checkingFullPath;
+		private static String originFullPath, originName;
+		private static String checkingFullPath, checkingName;
 		private static Boolean saveReport = false;
 		private static Boolean moveDuplicates = false;
 		private static Boolean stopProgram = false; // The program cannot be run due to lack of complete information from the user
@@ -18,24 +18,22 @@ namespace DuplicatesSearch
 		internal static void Main(string[] args)
 		{
 			// Initializes workspace for program - check all pathes and demands via arguments
-			Int32 result=InitProgram(args);
-			
-			if(result==0 || stopProgram)
+			Int32 result = InitProgram(args);
+
+			if (result == 0 || stopProgram)
 			{
-				return; 
+				return;
 			}
-			else if(result==1)
+			else if (result == 1)
 			{
-				Console.WriteLine($"2. Which files are duplicated inside [Origin]:");
+				WriteColor($"TSK: Which files are duplicated inside [{originName}]:\n", ConsoleColor.DarkGreen);
 				SearchInsideDir();
 			}
-			else if(result==2)
+			else if (result == 2)
 			{
-				Console.WriteLine("2. Which files in [Checking] are in [Origin]:");
+				WriteColor($"TSK: Which files into [{checkingName}] are into [{originName}]:\n", ConsoleColor.DarkGreen);
 				SearchBetweenDirs();
 			}
-
-			Console.ReadLine();
 		}
 
 		/// <summary>
@@ -43,42 +41,39 @@ namespace DuplicatesSearch
 		/// </summary>
 		private static void SearchBetweenDirs()
 		{
-			StringBuilder duplicatesFiles = new StringBuilder(1024);
 			Int32 countPairs = 0;
 
 			String[] checkingFiles = Directory.GetFiles(checkingFullPath, "*.*", SearchOption.AllDirectories);
 			String[] originFiles = Directory.GetFiles(originFullPath, "*.*", SearchOption.AllDirectories);
 
-			DirectoryInfo tempDir=null;
+			DirectoryInfo tempDir = null;
 			String newPath, newPathParent;
 
-
 			if (checkingFiles.Length == 0)
-				duplicatesFiles.AppendLine("[Checking] directory is empty");
-			if (originFiles.Length == 0)
-				duplicatesFiles.AppendLine("[Origin] directory is empty.");
-
-			if(checkingFiles.Length!=0 && originFiles.Length != 0)
 			{
-				for(Int32 ind1=0; ind1<checkingFiles.Length; ind1++)
+				WriteColor("INF: ", ConsoleColor.Cyan); Console.WriteLine($"[{checkingName}] directory is empty");
+			}
+			if (originFiles.Length == 0)
+			{
+				WriteColor("INF: ", ConsoleColor.Cyan); Console.WriteLine($"[{originName}] directory is empty.");
+			}
+
+			if (checkingFiles.Length != 0 && originFiles.Length != 0)
+			{
+				for (Int32 ind1 = 0; ind1 < checkingFiles.Length; ind1++)
 				{
-					for(Int32 ind2=0; ind2<originFiles.Length; ind2++)
+					for (Int32 ind2 = 0; ind2 < originFiles.Length; ind2++)
 					{
 						if (String.Equals(Path.GetFileName(checkingFiles[ind1]), Path.GetFileName(originFiles[ind2])))
 						{
 							countPairs++;
-							duplicatesFiles.AppendLine($"-> Checking: {checkingFiles[ind1].Substring(checkingFullPath.Length + 1)}");
-							duplicatesFiles.AppendLine($"     Origin: {originFiles[ind2].Substring(originFullPath.Length+1)}");
-
-							/*
-							duplicatesFiles.AppendLine($"-> {checkingFiles[ind1]}");
-							duplicatesFiles.AppendLine($"   {originFiles[ind2]}");
-							*/
+							WriteColor("WRN: ", ConsoleColor.Yellow); Console.WriteLine($"{checkingFiles[ind1].Substring(checkingFullPath.Length + 1)}");
+							Console.WriteLine($"     {originFiles[ind2].Substring(originFullPath.Length + 1)}");
 
 							if (moveDuplicates)
 							{
 								// Create temporary folder for diplicated files
-								if (tempDir==null)
+								if (tempDir == null)
 									tempDir = Directory.CreateDirectory(Path.Combine(checkingFullPath,
 										new StringBuilder("_" + DateTime.Now.ToString().Replace(":", ".").Replace(" ", "_")).ToString()));
 
@@ -100,11 +95,13 @@ namespace DuplicatesSearch
 			}
 
 			if (countPairs == 0)
-				Console.WriteLine("INF: Duplicates weren't found.");
+			{
+				WriteColor("INF: ", ConsoleColor.Cyan); Console.WriteLine("Duplicates weren't found.");
+			}
 			else
-				Console.WriteLine($"INF: Total pairs: {countPairs}");
-
-			Console.WriteLine(duplicatesFiles.ToString());
+			{
+				WriteColor("INF: ", ConsoleColor.Cyan); Console.WriteLine($"Total pairs: {countPairs}");
+			}
 		}
 
 		/// <summary>
@@ -112,21 +109,20 @@ namespace DuplicatesSearch
 		/// </summary>
 		private static void SearchInsideDir()
 		{
-			StringBuilder duplicatesFiles = new StringBuilder(1024);
 			String[] files = Directory.GetFiles(originFullPath, "*.*", SearchOption.AllDirectories);
 			Int32 countPairs = 0;
-			
-			if(files.Length>=2)
+
+			if (files.Length >= 2)
 			{
 				for (Int32 ind1 = 0; ind1 < files.Length - 1; ind1++)
 				{
-					for (Int32 ind2 = ind1+1; ind2 < files.Length; ind2++)
+					for (Int32 ind2 = ind1 + 1; ind2 < files.Length; ind2++)
 					{
 						if (String.Equals(Path.GetFileName(files[ind1]), Path.GetFileName(files[ind2])))
 						{
 							countPairs++;
-							duplicatesFiles.AppendLine($"-> {files[ind1].Substring(originFullPath.Length+1)}");
-							duplicatesFiles.AppendLine($"   {files[ind2].Substring(originFullPath.Length + 1)}");
+							WriteColor("WRN: ", ConsoleColor.Yellow); Console.WriteLine($"{ files[ind1].Substring(originFullPath.Length + 1)}");
+							Console.WriteLine($"     {files[ind2].Substring(originFullPath.Length + 1)}");
 							break;
 						}
 					}
@@ -134,11 +130,9 @@ namespace DuplicatesSearch
 			}
 
 			if (countPairs == 0)
-				duplicatesFiles.AppendLine("INF: Duplicates weren't found.");
+				Console.WriteLine("INF: Duplicates weren't found.");
 			else
-				duplicatesFiles.AppendLine($"INF: Total pairs: {countPairs}");
-
-			Console.WriteLine(duplicatesFiles);
+				WriteColor("INF: ", ConsoleColor.Cyan);  Console.WriteLine($"Total pairs: {countPairs}");
 		}
 
 		/// <summary>
@@ -149,10 +143,11 @@ namespace DuplicatesSearch
 		{
 			Int32 foldersNumber = 0; // Define how much folders are in init file
 
-			if ( args.Length!=0) // User inputed arguments
+			if (args.Length != 0) // User inputed arguments
 			{
-				List<String> initInfo = new List<String>();
-				initInfo.Add("1. Initialization:");
+				List<String> initERR = new List<String>();
+				List<String> initINF = new List<String>();
+				WriteColor("TSK: Program variables initialization:\n", ConsoleColor.DarkGreen);
 				for (Int32 ind = 0; ind < args.Length; ind++)
 				{
 					switch (args[ind])
@@ -171,7 +166,7 @@ namespace DuplicatesSearch
 									if (initFileLines.Length == 0)
 									{
 										foldersNumber = 0;
-										initInfo.Add("ERR: Initializtion file must has 2 line with pathes");
+										initERR.Add("Initializtion file must has 1 line with path at least");
 										stopProgram = true;
 									}
 									else
@@ -179,82 +174,85 @@ namespace DuplicatesSearch
 										foldersNumber = 1;
 
 										StringBuilder tempPath = new StringBuilder(256);
+										DirectoryInfo dirInfo;
 
 										tempPath.Append(initFileLines[0]).Replace('/', '\\');
-										originFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());										
+										originFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());
+										dirInfo = new DirectoryInfo(originFullPath);
+										originName = dirInfo.Name;
 
 										// Checking whether both pathes are existed
 										if (!Directory.Exists(originFullPath))
 										{
-											initInfo.Add($"ERR: [Origin] directory doesn't exist -> {originFullPath}");
+											initERR.Add($"[{originName}] directory doesn't exist -> {originFullPath}");
 											stopProgram = true;
 										}
 										else
-											initInfo.Add($"INF: [Origin] -> {originFullPath}");
-										
-										if(initFileLines.Length>1 && initFileLines[1].Length!=0)
+											initINF.Add($"Dir #1: {originFullPath}");
+
+										if (initFileLines.Length > 1 && initFileLines[1].Length != 0)
 										{
 											foldersNumber = 2; // Take first two lines. Other doesn't matter
 
 											tempPath.Clear().Append(initFileLines[1]).Replace('/', '\\');
 											checkingFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());
+											dirInfo = new DirectoryInfo(checkingFullPath);
+											checkingName = dirInfo.Name;
 											if (!Directory.Exists(checkingFullPath))
 											{
-												initInfo.Add($"ERR: [Checking] directory doesn't exist -> {checkingFullPath}");
+												initERR.Add($"[{checkingName}] directory doesn't exist -> {checkingFullPath}");
 												stopProgram = true;
 											}
 											else
-												initInfo.Add($"INF: [Checking] -> {checkingFullPath}");
+												initINF.Add($"Dir #2: {checkingFullPath}");
 										}
 									}
 									ind++;
 								}
 								else
 								{
-									initInfo.Add($"ERR: Specified initialization file doesn't exist -> {initFileFullPath}");
+									initERR.Add($"Specified initialization file doesn't exist -> {initFileFullPath}");
 									stopProgram = true;
 								}
 							}
 							else
 							{
-								initInfo.Add("ERR: The path to initialize file wasn't specifed after -i argument");
+								initERR.Add("The path to initialize file wasn't specifed after -i argument");
 								stopProgram = true;
 							}
 							break;
 						case "-r":
 							saveReport = true;
-							initInfo.Add("INF: Report will be saved in [Checking]\\Duplicates directory");
+							initINF.Add($"Report will be saved in [{checkingName}] directory");
 							break;
 						case "-m":
 							moveDuplicates = true;
-							initInfo.Add("INF: Duplicated files will be moved to [Checking]\\Duplicates directory");
+							initINF.Add($"Duplicated files will be moved to [{checkingName}\\_date_time] directory");
 							break;
 					}
 				}
-				/*
-				// Check if neccessary variables were assigned
-				if(originFullPath==null || checkingFullPath==null)
-					stopProgram=true;
-					*/
-							// Processing initInfo variable (checking whether initialization has gone successfully
-							StringBuilder resultInitInfo = new StringBuilder(512);
+
+				// Processing initInfo variable (checking whether initialization has gone successfully
+				StringBuilder resultInitInfo = new StringBuilder(512);
 				if (stopProgram) // Stop program if there are errors
 				{
-					foreach (var str in initInfo)
-						if (str.StartsWith("ERR:"))
-							resultInitInfo.AppendLine(str);
-					resultInitInfo.AppendLine("INF: The program cannot be run due to lack of complete information from the user");
+					initERR.Add("The program cannot be run due to lack of complete information from the user");
+					foreach(var str in initERR)
+					{
+						WriteColor("ERR: ", ConsoleColor.Red); Console.WriteLine(str);
+					}
 				}
 				else
 				{
-					foreach (var str in initInfo)
-						if (!str.StartsWith("ERR:"))
-							resultInitInfo.AppendLine(str);
-					resultInitInfo.AppendLine("INF: The program was initialized succesfully");
+					foreach (var str in initINF)
+					{
+						WriteColor("INF: ", ConsoleColor.Cyan); Console.WriteLine(str);
+					}
 				}
 
 				// Display initializator result
 				Console.WriteLine(resultInitInfo.ToString());
+
 			}
 			else // User didn't input any argument, so show help information
 			{
@@ -263,6 +261,19 @@ namespace DuplicatesSearch
 			}
 
 			return foldersNumber;
+		}
+
+		/// <summary>
+		/// Color print to console
+		/// </summary>
+		/// <param name="color"></param>
+		/// <param name="text"></param>
+		private static void WriteColor(String text, ConsoleColor color)
+		{
+			var tempColor = Console.ForegroundColor;
+			Console.ForegroundColor = color;
+			Console.Write(text);
+			Console.ForegroundColor = tempColor;
 		}
 	}
 }
