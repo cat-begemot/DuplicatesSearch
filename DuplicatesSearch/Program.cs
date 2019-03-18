@@ -17,19 +17,32 @@ namespace DuplicatesSearch
 
 		internal static void Main(string[] args)
 		{
-			InitProgram(args); // Initializes workspace for program - check all pathes and demands via arguments
-			if (stopProgram) return;
-
-			SearchInsideOriginal();
-			SearchInsideChecking();
-			SearchBetweenDirs();
+			// Initializes workspace for program - check all pathes and demands via arguments
+			Int32 result=InitProgram(args);
+			
+			if(result==0 || stopProgram)
+			{
+				return; 
+			}
+			else if(result==1)
+			{
+				Console.WriteLine($"2. Which files are duplicated inside [Origin]:");
+				SearchInsideDir();
+			}
+			else if(result==2)
+			{
+				Console.WriteLine("2. Which files in [Checking] are in [Origin]:");
+				SearchBetweenDirs();
+			}
 
 			Console.ReadLine();
 		}
 
+		/// <summary>
+		/// Search files into Checking directory which are into Original directory
+		/// </summary>
 		private static void SearchBetweenDirs()
 		{
-			Console.WriteLine("4. Which files in [Checking] are in [Origin]:");
 			StringBuilder duplicatesFiles = new StringBuilder(1024);
 			Int32 countPairs = 0;
 
@@ -54,8 +67,13 @@ namespace DuplicatesSearch
 						if (String.Equals(Path.GetFileName(checkingFiles[ind1]), Path.GetFileName(originFiles[ind2])))
 						{
 							countPairs++;
+							duplicatesFiles.AppendLine($"-> Checking: {checkingFiles[ind1].Substring(checkingFullPath.Length + 1)}");
+							duplicatesFiles.AppendLine($"     Origin: {originFiles[ind2].Substring(originFullPath.Length+1)}");
+
+							/*
 							duplicatesFiles.AppendLine($"-> {checkingFiles[ind1]}");
 							duplicatesFiles.AppendLine($"   {originFiles[ind2]}");
+							*/
 
 							if (moveDuplicates)
 							{
@@ -89,29 +107,13 @@ namespace DuplicatesSearch
 			Console.WriteLine(duplicatesFiles.ToString());
 		}
 
-		private static void SearchInsideOriginal()
-		{
-			Console.WriteLine("2. Search duplicates in [Origin] directory:");
-			StringBuilder result = SearchInsideDir(originFullPath);
-
-			Console.WriteLine(result.ToString());
-		}
-
-		private static void SearchInsideChecking()
-		{
-			Console.WriteLine("3. Search duplicates in [Checking] directory:");
-			StringBuilder result = SearchInsideDir(checkingFullPath);
-
-			Console.WriteLine(result.ToString());
-		}
-
 		/// <summary>
-		/// Search duplicated files inside directory
+		/// Helper: Search duplicated files inside directory
 		/// </summary>
-		private static StringBuilder SearchInsideDir(String path)
+		private static void SearchInsideDir()
 		{
 			StringBuilder duplicatesFiles = new StringBuilder(1024);
-			String[] files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
+			String[] files = Directory.GetFiles(originFullPath, "*.*", SearchOption.AllDirectories);
 			Int32 countPairs = 0;
 			
 			if(files.Length>=2)
@@ -123,8 +125,8 @@ namespace DuplicatesSearch
 						if (String.Equals(Path.GetFileName(files[ind1]), Path.GetFileName(files[ind2])))
 						{
 							countPairs++;
-							duplicatesFiles.AppendLine($"-> {files[ind1]}");
-							duplicatesFiles.AppendLine($"   {files[ind2]}");
+							duplicatesFiles.AppendLine($"-> {files[ind1].Substring(originFullPath.Length+1)}");
+							duplicatesFiles.AppendLine($"   {files[ind2].Substring(originFullPath.Length + 1)}");
 							break;
 						}
 					}
@@ -136,16 +138,18 @@ namespace DuplicatesSearch
 			else
 				duplicatesFiles.AppendLine($"INF: Total pairs: {countPairs}");
 
-			return duplicatesFiles;
+			Console.WriteLine(duplicatesFiles);
 		}
 
 		/// <summary>
 		/// Initializes workspace for program - check all pathes and demands via arguments
 		/// </summary>
 		/// <param name="args"></param>
-		private static void InitProgram(string[] args)
+		private static Int32 InitProgram(string[] args)
 		{
-			if( args.Length!=0) // User inputed arguments
+			Int32 foldersNumber = 0; // Define how much folders are in init file
+
+			if ( args.Length!=0) // User inputed arguments
 			{
 				List<String> initInfo = new List<String>();
 				initInfo.Add("1. Initialization:");
@@ -164,18 +168,20 @@ namespace DuplicatesSearch
 								{
 									// Read initialization file and fill appropriate variables
 									String[] initFileLines = File.ReadAllLines(initFileFullPath);
-									if (initFileLines.Length < 2)
+									if (initFileLines.Length == 0)
 									{
+										foldersNumber = 0;
 										initInfo.Add("ERR: Initializtion file must has 2 line with pathes");
 										stopProgram = true;
 									}
 									else
 									{
+										foldersNumber = 1;
+
 										StringBuilder tempPath = new StringBuilder(256);
+
 										tempPath.Append(initFileLines[0]).Replace('/', '\\');
-										originFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());
-										tempPath.Clear().Append(initFileLines[1]).Replace('/', '\\');
-										checkingFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());
+										originFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());										
 
 										// Checking whether both pathes are existed
 										if (!Directory.Exists(originFullPath))
@@ -185,16 +191,23 @@ namespace DuplicatesSearch
 										}
 										else
 											initInfo.Add($"INF: [Origin] -> {originFullPath}");
-										if (!Directory.Exists(checkingFullPath))
+										
+										if(initFileLines.Length>1 && initFileLines[1].Length!=0)
 										{
-											initInfo.Add($"ERR: [Checking] directory doesn't exist -> {checkingFullPath}");
-											stopProgram = true;
-										}
-										else
-											initInfo.Add($"INF: [Checking] -> {checkingFullPath}");
+											foldersNumber = 2; // Take first two lines. Other doesn't matter
 
-										ind++;
+											tempPath.Clear().Append(initFileLines[1]).Replace('/', '\\');
+											checkingFullPath = Path.Combine(Path.GetDirectoryName(initFileFullPath), tempPath.ToString());
+											if (!Directory.Exists(checkingFullPath))
+											{
+												initInfo.Add($"ERR: [Checking] directory doesn't exist -> {checkingFullPath}");
+												stopProgram = true;
+											}
+											else
+												initInfo.Add($"INF: [Checking] -> {checkingFullPath}");
+										}
 									}
+									ind++;
 								}
 								else
 								{
@@ -218,13 +231,13 @@ namespace DuplicatesSearch
 							break;
 					}
 				}
-
+				/*
 				// Check if neccessary variables were assigned
 				if(originFullPath==null || checkingFullPath==null)
 					stopProgram=true;
-
-				// Processing initInfo variable (checking whether initialization has gone successfully
-				StringBuilder resultInitInfo = new StringBuilder(512);
+					*/
+							// Processing initInfo variable (checking whether initialization has gone successfully
+							StringBuilder resultInitInfo = new StringBuilder(512);
 				if (stopProgram) // Stop program if there are errors
 				{
 					foreach (var str in initInfo)
@@ -248,6 +261,8 @@ namespace DuplicatesSearch
 				Console.WriteLine("Show help information");
 				stopProgram = true;
 			}
+
+			return foldersNumber;
 		}
 	}
 }
