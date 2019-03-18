@@ -29,39 +29,50 @@ namespace DuplicatesSearch
 
 		private static void SearchBetweenDirs()
 		{
-			Console.WriteLine("4. Search duplicates between [Origin] and [Checking]:");
+			Console.WriteLine("4. Which files in [Checking] are in [Origin]:");
 			StringBuilder duplicatesFiles = new StringBuilder(1024);
-			String[] originFiles = Directory.GetFiles(originFullPath, "*.*", SearchOption.AllDirectories);
-			String[] checkingFiles = Directory.GetFiles(checkingFullPath, "*.*", SearchOption.AllDirectories);
 			Int32 countPairs = 0;
-			DirectoryInfo tempDir = null;
 
-			if (originFiles.Length == 0)
-				duplicatesFiles.AppendLine("[Origin] directory is empty.");
+			String[] checkingFiles = Directory.GetFiles(checkingFullPath, "*.*", SearchOption.AllDirectories);
+			String[] originFiles = Directory.GetFiles(originFullPath, "*.*", SearchOption.AllDirectories);
+
+			DirectoryInfo tempDir=null;
+			String newPath, newPathParent;
+
+
 			if (checkingFiles.Length == 0)
 				duplicatesFiles.AppendLine("[Checking] directory is empty");
+			if (originFiles.Length == 0)
+				duplicatesFiles.AppendLine("[Origin] directory is empty.");
 
-			if(originFiles.Length!=0 && checkingFiles.Length!=0)
+			if(checkingFiles.Length!=0 && originFiles.Length != 0)
 			{
-				for(Int32 ind1=0; ind1<originFiles.Length; ind1++)
+				for(Int32 ind1=0; ind1<checkingFiles.Length; ind1++)
 				{
-					for(Int32 ind2=0; ind2<checkingFiles.Length; ind2++)
+					for(Int32 ind2=0; ind2<originFiles.Length; ind2++)
 					{
-						if (String.Equals(Path.GetFileName(originFiles[ind1]), Path.GetFileName(checkingFiles[ind2])))
+						if (String.Equals(Path.GetFileName(checkingFiles[ind1]), Path.GetFileName(originFiles[ind2])))
 						{
 							countPairs++;
-							duplicatesFiles.AppendLine($"-> {originFiles[ind1]}");
-							duplicatesFiles.AppendLine($"   {checkingFiles[ind2]}");
+							duplicatesFiles.AppendLine($"-> {checkingFiles[ind1]}");
+							duplicatesFiles.AppendLine($"   {originFiles[ind2]}");
 
-							if(moveDuplicates)
+							if (moveDuplicates)
 							{
-								if(tempDir==null)
+								// Create temporary folder for diplicated files
+								if (tempDir==null)
 									tempDir = Directory.CreateDirectory(Path.Combine(checkingFullPath,
-										new StringBuilder(DateTime.Now.ToString().Replace(":", ".").Replace(" ", "_")).ToString()));
+										new StringBuilder("_" + DateTime.Now.ToString().Replace(":", ".").Replace(" ", "_")).ToString()));
 
-								// Copy saving catalog structure (because it could be duplicated files)
-								File.Copy(checkingFiles[ind2], Path.Combine(tempDir.FullName, Path.GetFileName(checkingFiles[ind2])));
-								File.Delete(checkingFiles[ind2]);
+								// Save path structure to duplicated file
+								newPath = Path.Combine(tempDir.FullName, checkingFiles[ind1].Substring(checkingFullPath.Length + 1));
+
+								// Check and create appropriate path if it doesn't exist
+								newPathParent = Path.GetDirectoryName(newPath);
+								if (!Directory.Exists(newPathParent))
+									Directory.CreateDirectory(newPathParent);
+
+								Directory.Move(checkingFiles[ind1], newPath);
 							}
 
 							break;
