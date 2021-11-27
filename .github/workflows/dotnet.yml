@@ -1,4 +1,4 @@
-name: Test action for each commit
+name: Master: build and run tests
 
 on:
   push
