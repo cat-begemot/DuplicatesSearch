@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
+using System.Text;
 
 namespace DuplicatesSearch
 {
-	internal class Program
+    internal class Program
 	{
 		private static String originFullPath, originName;
 		private static String checkingFullPath, checkingName;
