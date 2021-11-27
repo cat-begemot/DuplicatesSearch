@@ -22,7 +22,7 @@ namespace DuplicatesSearch
 			{
 				return;
 			}
-			else if (result == 1)
+			else if (result == 1)-
 			{
 				WriteColor($"TSK: Which files are duplicated inside [{originName}]:\n", ConsoleColor.DarkGreen);
 				SearchInsideDir();
